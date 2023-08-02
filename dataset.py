@@ -12,11 +12,22 @@ stop_words = set(stopwords.words('english'))
 
 class CustomDataset(Dataset):
     def __init__(self, text_data, labels, paragraph_size, review_size):
-        self.combined =  labels
+        self.combined = labels + text_data
         self.text_data = text_data
         self.labels = labels
         self.tokenizer = get_tokenizer('basic_english')
-        self.vocab = build_vocab_from_iterator(self.tokenizer(text) for text in self.combined)
+        self.data = []
+
+
+        for text in self.combined:
+            t = self.tokenizer(text)
+            for word in text:
+                if word == '.':
+                    t.remove(word)
+
+            self.data.append(t)
+
+        self.vocab = build_vocab_from_iterator(self.data, specials= ["<PAD>", "<UNK>", "<SOS>", "<EOS>"], min_freq=1)
         self.paragraph_size = paragraph_size
         self.review_size = review_size
 
@@ -59,12 +70,13 @@ class CustomDataset(Dataset):
         numerical_representation = []
         for token in tokens:
             if token not in self.vocab:
+                numerical_representation.append(self.vocab["<UNK>"])
                 continue
             numerical_representation.append(self.vocab[token])
 
         # Init SOS and EOS tokens
-        SOS = len(self.vocab) + 1
-        EOS = len(self.vocab) + 2
+        SOS =  self.vocab["<SOS>"]
+        EOS =  self.vocab["<EOS>"]
 
         # Add SOS token as the first value
         numerical_representation = [SOS] + numerical_representation
@@ -81,8 +93,8 @@ class CustomDataset(Dataset):
             numerical_representation.append(EOS)
 
             # Pad the numerical_representation
-            padding = [0] * num_paddings
-            numerical_representation += padding
+            padding_array = np.array([self.vocab["<PAD>"]] * num_paddings)
+            numerical_representation += padding_array.tolist()
 
         numerical_representation = torch.tensor(numerical_representation)
 
@@ -90,7 +102,12 @@ class CustomDataset(Dataset):
 
         # Tokenize label and convert to numerical representation
         tokens_label = self.tokenizer(label)
-        numerical_representation_label = [self.vocab[token] for token in tokens_label if token in self.vocab]
+        numerical_representation_label = []
+        for token in tokens_label:
+            if token not in self.vocab:
+                numerical_representation_label.append(self.vocab["<UNK>"])
+                continue
+            numerical_representation_label.append(self.vocab[token])
 
         # Add SOS token as the first value in label
         numerical_representation_label = [SOS] + numerical_representation_label
@@ -107,8 +124,8 @@ class CustomDataset(Dataset):
             numerical_representation_label.append(EOS)
 
             # Pad the numerical_representation_label
-            padding_label = [0] * num_paddings_label
-            numerical_representation_label += padding_label
+            padding_array = np.array([self.vocab["<PAD>"]] * num_paddings_label)
+            numerical_representation_label += padding_array.tolist()
 
         numerical_representation_label = torch.tensor(numerical_representation_label)
 
