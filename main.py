@@ -15,9 +15,9 @@ from nltk.translate.bleu_score import corpus_bleu
 
 
 # Constants
-BATCH_SIZE = 15
-NUM_EPOCHS = 200
-LEARNING_RATE = .1
+BATCH_SIZE = 64
+NUM_EPOCHS = 20
+LEARNING_RATE = .001
 DEVICE = "cuda" if torch.cuda.is_available else "cpu"
 # DEVICE = "cpu"
 embedding_dim = 128
@@ -27,7 +27,7 @@ CLIP = 5
 DROPOUT = .5
 
 # Retrieve data
-datapipe = IterableWrapper(["overfit.csv"])
+datapipe = IterableWrapper(["test.csv"])
 datapipe = FileOpener(datapipe, mode='b')
 datapipe = datapipe.parse_csv(skip_lines=1)
 
@@ -50,7 +50,7 @@ for sample in datapipe:
     """
 
 # Split the data into training and testing
-x_train, x_test, y_train, y_test = train_test_split(paragraph_data, summarized_data, test_size=.5, random_state=1)
+x_train, x_test, y_train, y_test = train_test_split(paragraph_data, summarized_data, test_size=.1, random_state=1)
 
 
 # Combine the X and Y and adjust it before converting to a tensor
@@ -181,8 +181,6 @@ class Seq2Seq(nn.Module):
     def forward(self, input_seq, target_seq, padding_mask, teacher_forcing_ratio):
         teacher_forcing_ratio = 1
         # Shape should be (paragraph_size, BATCH_SIZE)
-        input_seq = input_seq.transpose(0, 1)
-        target_seq = target_seq.transpose(0, 1)
 
         batch = input_seq.shape[1]
 
@@ -289,8 +287,12 @@ for epoch in range(NUM_EPOCHS):
         x = x.to(DEVICE)
         y = y.to(DEVICE)
 
-        # Create a padding mask for the input sequence
         padding_mask = (x != train_data.vocab["<PAD>"]).float()
+
+        x = x.transpose(0, 1)
+        y = y.transpose(0, 1)
+
+        # Create a padding mask for the input sequence
 
         optimizer.zero_grad()
 
@@ -298,7 +300,7 @@ for epoch in range(NUM_EPOCHS):
 
         # Reshape the output and target for computing loss
         output2 = output.view(-1, output_vocab_size)
-        target2 = y.view(-1)
+        target2 = y.reshape(-1)
 
         # Compute the loss
         loss = criterion(output2, target2)
@@ -316,14 +318,15 @@ for epoch in range(NUM_EPOCHS):
 
         # Check accuracy
         output = output.transpose(0,1)
-        # y = y.transpose(0,1)
+        y = y.transpose(0,1)
 
-        if (epoch >= 50):
+        if (cnt == 161):
 
             generated_summaries.extend([tensor_to_text(g) for g in output])
             reference_summaries.extend([tensor_to_text(t) for t in y])
             print(generated_summaries)
             print(reference_summaries)
+        cnt += 1
         # break
     # break
 

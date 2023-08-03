@@ -21,13 +21,9 @@ class CustomDataset(Dataset):
 
         for text in self.combined:
             t = self.tokenizer(text)
-            for word in text:
-                if word == '.':
-                    t.remove(word)
-
             self.data.append(t)
 
-        self.vocab = build_vocab_from_iterator(self.data, specials= ["<PAD>", "<UNK>", "<SOS>", "<EOS>"], min_freq=1)
+        self.vocab = build_vocab_from_iterator(self.data, specials= ["<PAD>", "<UNK>", "<SOS>", "<EOS>"], min_freq=5)
         self.paragraph_size = paragraph_size
         self.review_size = review_size
 
