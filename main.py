@@ -15,13 +15,13 @@ from nltk.translate.bleu_score import corpus_bleu
 
 
 # Constants
-BATCH_SIZE = 64
-NUM_EPOCHS = 20
-LEARNING_RATE = .001
+BATCH_SIZE = 32
+NUM_EPOCHS = 40
+LEARNING_RATE = .04
 DEVICE = "cuda" if torch.cuda.is_available else "cpu"
 # DEVICE = "cpu"
-embedding_dim = 128
-hidden_dim = 128
+embedding_dim = 64
+hidden_dim = 64
 NUM_LAYERS = 2
 CLIP = 5
 DROPOUT = .5
@@ -50,7 +50,7 @@ for sample in datapipe:
     """
 
 # Split the data into training and testing
-x_train, x_test, y_train, y_test = train_test_split(paragraph_data, summarized_data, test_size=.1, random_state=1)
+x_train, x_test, y_train, y_test = train_test_split(paragraph_data, summarized_data, test_size= .1, random_state=1)
 
 
 # Combine the X and Y and adjust it before converting to a tensor
@@ -262,7 +262,7 @@ def init_weights(m):
 
 # model.apply(init_weights)
 
-# model.load_state_dict(torch.load("text_summarizer_model.pth"))
+# model.load_state_dict(torch.load("check2.pth"))
 
 # Just some Info to know how long backprop will take
 def count_parameters(model):
@@ -320,14 +320,14 @@ for epoch in range(NUM_EPOCHS):
         output = output.transpose(0,1)
         y = y.transpose(0,1)
 
-        if (cnt == 161):
-
-            generated_summaries.extend([tensor_to_text(g) for g in output])
-            reference_summaries.extend([tensor_to_text(t) for t in y])
-            print(generated_summaries)
-            print(reference_summaries)
-        cnt += 1
-        # break
+        # if (cnt == 161):
+        #
+    #     generated_summaries.extend([tensor_to_text(g) for g in output])
+    #     reference_summaries.extend([tensor_to_text(t) for t in y])
+    #     print(generated_summaries)
+    #     print(reference_summaries)
+    #     cnt += 1
+    #     break
     # break
 
     # Calculate the average loss for the epoch
@@ -338,4 +338,4 @@ for epoch in range(NUM_EPOCHS):
     print(f"Epoch [{epoch+1}/{NUM_EPOCHS}], Loss: {average_loss:.4f}")
     # print("BLEU Score:", bleu_score)
 # Save the trained model if desired
-torch.save(model.state_dict(), "text_summarizer_model.pth")
+torch.save(model.state_dict(), "check1.pth")
